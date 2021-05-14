@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <fstream>
+#include <map>
+#include <iostream>
 
 using namespace std;
 
@@ -30,32 +32,77 @@ void imprimeLinha(int offset,FILE *f) {
     printf("%s",linha);
 }
 
+struct registro {
+    int valor;
+    int proximo;
+};
+
 // classe que implementa a lista invertida
 class listaInvertida {
 public:
+    map < string, int > secondaryIndexes;
+    FILE* indexFile;
     // construtor
-    listaInvertida() { }
+    listaInvertida() { 
+        secondaryIndexes.clear();
+        indexFile = fopen("indexes.idx", "wb+");
+        if(indexFile == NULL){
+            printf("\n\n Nao consegui abrir arquivo de indices. Sinto muito.\n\n\n\n");
+            return ;
+        }
+    }
     // destrutor
-    ~listaInvertida() { }
+    ~listaInvertida() { 
+        fclose(indexFile);
+    }
+
     // adiciona palavra na estrutura
-    void adiciona(char *palavra, int offset) { }
+    void adiciona(char *palavra, int offset) {
+        string aux;
+        for(int i=0; i<strlen(palavra); i++) aux.push_back(palavra[i]);
+        if (!secondaryIndexes.count(aux)) secondaryIndexes[aux] = -1;
+        int offsetStart = secondaryIndexes[aux];
+
+        fseek(indexFile, 0, SEEK_END);
+        int newStart = ftell(indexFile);
+        struct registro reg;
+        reg.valor = offset;
+        reg.proximo = offsetStart;
+        fwrite(&reg, sizeof(struct registro), 1, indexFile);
+
+        secondaryIndexes[aux] = newStart;
+    }
+
     // realiza busca, retornando vetor de offsets que referenciam a palavra
     int * busca(char *palavra, int *quantidade) {
-        // substituir pelo resultado da busca na lista invertida
-        quantidade[0] = 10;
-        int *offsets = new int[10];
-        int i = 0;
-        // exemplo: retornar os primeiros 10 offsets da palavra "terra"
-        offsets[i++] = 58;
-        offsets[i++] = 69;
-        offsets[i++] = 846;
-        offsets[i++] = 943;
-        offsets[i++] = 1083;
-        offsets[i++] = 1109;
-        offsets[i++] = 1569;
-        offsets[i++] = 1792;
-        offsets[i++] = 2041;
-        offsets[i++] = 2431;
+        string aux;
+        for(int i=0; i<strlen(palavra); i++) aux.push_back(palavra[i]);
+        int offsetStart = secondaryIndexes[aux];
+
+        *quantidade = 0;
+        while (offsetStart != -1) {
+            fseek(indexFile, offsetStart, SEEK_SET);
+            struct registro reg;
+            fread(&reg, sizeof(struct registro), 1, indexFile);
+            
+            *quantidade += 1;   
+
+            offsetStart = reg.proximo;
+        }
+
+        offsetStart = secondaryIndexes[aux];
+
+        int* offsets = new int[*quantidade];
+        int cnt = 0;
+        while (offsetStart != -1) {
+            fseek(indexFile, offsetStart, SEEK_SET);
+            struct registro reg;
+            fread(&reg, sizeof(struct registro), 1, indexFile);
+            
+            offsets[cnt++] = reg.valor;
+
+            offsetStart = reg.proximo;
+        }
         return offsets;
     }
 private:
@@ -102,7 +149,7 @@ int main(int argc, char** argv) {
                 // com vetor de offsets, recuperar as linhas que contem a palavra desejada
                 if (quantidade > 0) {
                     FILE *f = fopen("biblia.txt","rt");
-                    for (int i = 0; i < quantidade; i++)
+                    for (int i = quantidade-1; i >= 0; i--)
                         imprimeLinha(offsets[i],f);
                     fclose(f);
                 }
