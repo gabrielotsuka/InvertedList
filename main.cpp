@@ -77,6 +77,7 @@ public:
     int * busca(char *palavra, int *quantidade) {
         string aux;
         for(int i=0; i<strlen(palavra); i++) aux.push_back(palavra[i]);
+        if (!secondaryIndexes.count(aux)) secondaryIndexes[aux] = -1;
         int offsetStart = secondaryIndexes[aux];
 
         *quantidade = 0;
@@ -147,6 +148,7 @@ int main(int argc, char** argv) {
                 // busca na lista invertida
                 int *offsets = lista.busca(palavra,&quantidade);
                 // com vetor de offsets, recuperar as linhas que contem a palavra desejada
+                printf("quantidade -> %d\n", quantidade);
                 if (quantidade > 0) {
                     FILE *f = fopen("biblia.txt","rt");
                     for (int i = quantidade-1; i >= 0; i--)
