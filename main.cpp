@@ -1,5 +1,8 @@
 /*
- * File:   main.cpp
+ Alunos responsáveis:
+ Marcos Felipe Belisário Costa          11811BCC020
+ Gabriel José Bueno Otsuka              11721BCC018
+ Pedro Henrique Bufullin de Almieda     11711BCC028
  */
 
 #include <stdlib.h>
